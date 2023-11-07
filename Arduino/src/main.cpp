@@ -9,7 +9,7 @@
 /*-----( Declare Variables )-----*/
 
 // Stepper variables & instances
-const int stepsPerRev = 509;
+const int stepsPerRev = 500;
 const int stepperSpeed = 50;
 const int stepperDwell = 300;
 Stepper stepper = Stepper(stepsPerRev, 49, 47, 48, 46);
@@ -51,48 +51,34 @@ void dispenseTreats() {
 
 // This function checks is the treat dispense button has been pressed.
 // If the button has been pressed, dispenseTreats() is called to give Trashboat his tasty treats.
-void buttonDispense() {
+void checkButton() {
   if (digitalRead(buttonMain) == 0) {
 		dispenseTreats();
 	}
 }
 
+// This function checks if the IR Receiver has received an infrared signal.
+// If a signal has been received, decode the signal and make sure it comes from the correct remote and the correct button was pressed.
+// If the correct button was pressed, dispense treats.
+void checkIrRemote() {
+  if (IrReceiver.decode()) {
+    IrReceiver.printIRResultShort(&Serial);
+    IrReceiver.printIRSendUsage(&Serial);
+    if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
+        Serial.println(F("Received noise or an unknown protocol"));
+        IrReceiver.printIRResultRawFormatted(&Serial, true);
+    }
+    Serial.println();
+    IrReceiver.resume();
+
+    if (IrReceiver.decodedIRData.command == 0x40) {
+        dispenseTreats();
+    } 
+  }
+}
+
 // Main loop function
 void loop() {
-  buttonDispense();
-	 /*
-     * Check if received data is available and if yes, try to decode it.
-     * Decoded result is in the IrReceiver.decodedIRData structure.
-     *
-     * E.g. command is in IrReceiver.decodedIRData.command
-     * address is in command is in IrReceiver.decodedIRData.address
-     * and up to 32 bit raw data in IrReceiver.decodedIRData.decodedRawData
-     */
-    if (IrReceiver.decode()) {
-
-        /*
-         * Print a short summary of received data
-         */
-        IrReceiver.printIRResultShort(&Serial);
-        IrReceiver.printIRSendUsage(&Serial);
-        if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-            Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
-            // We have an unknown protocol here, print more info
-            IrReceiver.printIRResultRawFormatted(&Serial, true);
-        }
-        Serial.println();
-
-        /*
-         * !!!Important!!! Enable receiving of the next value,
-         * since receiving has stopped after the end of the current received data packet.
-         */
-        IrReceiver.resume(); // Enable receiving of the next value
-
-        /*
-         * Finally, check the received data and perform actions according to the received command
-         */
-        if (IrReceiver.decodedIRData.command == 0x40) {
-            dispenseTreats();
-        } 
-    }
+  checkButton();
+  checkIrRemote();
 }
