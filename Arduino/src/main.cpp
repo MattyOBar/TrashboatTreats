@@ -29,7 +29,7 @@ TM1637Display display = TM1637Display(CLK, DIO);
 const uint8_t allON[] = {0xff, 0xff, 0xff, 0xff};
 const uint8_t allOFF[] = {0x00, 0x00, 0x00, 0x00};
 
-// // Treat Counter
+// Treat Counter
 #define CLK2 28
 #define DIO2 29
 TM1637Display treatDisplay = TM1637Display(CLK2, DIO2);
@@ -41,6 +41,7 @@ boolean startRan = false;
 // Setup function
 void setup() {
 	Serial.begin(115200);
+  Serial.println("machine on");
 	
   display.setBrightness(5);
   display.setSegments(allON);
@@ -48,23 +49,23 @@ void setup() {
   treatDisplay.setSegments(allON);
 
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
-  Serial.print(F("Ready to receive IR signals of protocols: "));
-  printActiveIRProtocols(&Serial);
-  Serial.println(F("at pin " STR(IR_RECEIVE_PIN)));
-
+  Serial.print(F("Ready to receive IR signals "));
 
 	pinMode(buttonMain, INPUT_PULLUP);
 
-  delay(500);
-  display.clear();
-  treatDisplay.clear();
+  // delay(500);
+  // display.showNumberDecEx(100, 0b01000000, true, 4, 0);
+  delay(50);
+  // treatDisplay.showNumberDec(treatCount, true);
+  // display.clear();
+  // treatDisplay.clear();
   
 }
 
 // This function only runs at the start.
 void displaysOn() {
   if (startRan == false) {
-    display.showNumberDecEx(100, 0b01000000, true, 4, 0);
+    display.showNumberDecEx(10, 0b01000000, true, 4, 0);
     treatDisplay.showNumberDec(treatCount, true);
     startRan = true;
   }
@@ -74,13 +75,13 @@ void displaysOn() {
 // The timer is purposely blocking other functions from running, so as to prevent Trashboat from getting to many treats.
 void startTimer() {
   delay(1000);
-  for (int i = 5; i != 0; i--) {
-    display.showNumberDec(i, true);
+  for (int i = 10; i != 0; i--) {
+    display.showNumberDecEx(i, 0b01000000, true, 4, 0);
     delay(1000);
   }
   display.showNumberDec(0, true);
   delay(1000);
-  display.showNumberDecEx(100, 0b01000000, true, 4, 0);
+  display.showNumberDecEx(10, 0b01000000, true, 4, 0);
 }
 
 // This function updates the local count for how many times treats have been dispensed.
@@ -137,6 +138,7 @@ void checkIrRemote() {
 // Main loop function
 void loop() {
   displaysOn();
+  delay(50);
   checkButton();
   delay(50);
   checkIrRemote();
