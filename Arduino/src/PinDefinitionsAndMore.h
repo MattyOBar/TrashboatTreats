@@ -139,7 +139,7 @@
 #define _IR_TIMING_TEST_PIN 7
 
 #  else // Default as for ATmega328 like on Uno, Nano, Leonardo, Teensy 2.0 etc.
-#define IR_RECEIVE_PIN      11 // To be compatible with interrupt example, pin 2 is chosen here.
+#define IR_RECEIVE_PIN      32 // To be compatible with interrupt example, pin 2 is chosen here.
 #define IR_SEND_PIN         3
 #define TONE_PIN            4
 #define APPLICATION_PIN     5

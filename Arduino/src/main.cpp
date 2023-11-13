@@ -2,6 +2,7 @@
 #include <Stepper.h>
 #include <IRremote.h>
 #include "PinDefinitionsAndMore.h"
+#include <TM1637Display.h>
 
 
 /*-----( Declare Constants and Pin Numbers )-----*/
@@ -14,31 +15,71 @@ const int stepperSpeed = 50;
 const int stepperDwell = 300;
 Stepper stepper = Stepper(stepsPerRev, 49, 47, 48, 46);
 
-// main dispenser button
+// Main dispenser button
 const int buttonMain = 22;
 
 // IR receiver
 #define DECODE_NEC
-// const int IR_RECEIVE_PIN = 2;
+
+// Timer display
+#define CLK 26
+#define DIO 27
+TM1637Display display = TM1637Display(CLK, DIO);
+const uint8_t allON[] = {0xff, 0xff, 0xff, 0xff};
+const uint8_t allOFF[] = {0x00, 0x00, 0x00, 0x00};
+
+// Treat Counter Display
+#define CLK2 28
+#define DIO2 29
+TM1637Display treatDisplay = TM1637Display(CLK2, DIO2);
+int treatCount = 0;
 
 // Setup function
 void setup() {
 	Serial.begin(115200);
+  Serial.println("Machine on");
 	
+  display.setBrightness(5);
+  display.setSegments(allON);
+  treatDisplay.setBrightness(5);
+  treatDisplay.setSegments(allON);
+
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
-  Serial.print(F("Ready to receive IR signals of protocols: "));
-  printActiveIRProtocols(&Serial);
-  Serial.println(F("at pin " STR(IR_RECEIVE_PIN)));
+  Serial.print(F("Ready to receive IR signals"));
 
 	pinMode(buttonMain, INPUT_PULLUP);
+
+  display.clear();
+  treatDisplay.clear();
+  delay(50);
+  display.showNumberDecEx(100, 0b01000000, true, 4, 0);
+  delay(50);
+  treatDisplay.showNumberDec(treatCount, true);
 }
 
+// This function starts the 1 minute countdown on the 7 segment 4 digit display.
+// The timer is purposely blocking other functions from running, so as to prevent Trashboat from getting to many treats.
+void startTimer() {
+  delay(1000);
+  for (int i = 5; i != 0; i--) { // change the value of i to adjust timer length
+    display.showNumberDecEx(i, 0b01000000, true, 4, 0);
+    delay(1000);
+  }
+  display.showNumberDec(0, true);
+  delay(1000);
+  display.showNumberDecEx(100, 0b01000000, true, 4, 0);
+}
 
+// This function updates the local count for how many times treats have been dispensed.
+void updateTreatCounter() {
+  treatCount += 1;
+  treatDisplay.showNumberDec(treatCount, true);
+}
 
-// This function activates the stepper motor to dispense treats
-// stepperSpeed adjusts the speed of the motor
-// stepsPerRev adjusts the length of the rotation
-// stepperDwell adjusts the time dwell inbetween rotations
+// This function activates the stepper motor to dispense treats.
+// stepperSpeed adjusts the speed of the motor.
+// stepsPerRev adjusts the length of the rotation.
+// stepperDwell adjusts the time dwell inbetween rotations.
 void dispenseTreats() {
 	stepper.setSpeed(stepperSpeed);
 	stepper.step(stepsPerRev);
@@ -46,7 +87,9 @@ void dispenseTreats() {
 
 	stepper.setSpeed(stepperSpeed);
 	stepper.step(-stepsPerRev);
-	delay(stepperDwell);
+  updateTreatCounter();
+	startTimer();
+
 }
 
 // This function checks is the treat dispense button has been pressed.
